@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "agent_card_version": "1.0",
+  "name": "Cover Pieces™",
+  "url": "https://cumulativewebinc.github.io/cwi-cover-pieces/",
+  "provider": {
+    "name": "Cumulative Web Inc",
+    "url": "https://cumulativeweb.com",
+    "contact": "hp@cumulativeweb.com"
+  },
+  "description": "A jigsaw puzzle game from Cumulative Web Inc — reassemble real That Boy Hi Hat cover art (Zooted Zone, Doves & Diamonds) from procedurally cut interlocking pieces, 24 to 150 pieces, with snap-to-place, zoom/pan, save/resume, and a listen dialog that streams the music behind the art.",
+  "data_truth": "LIVE — self-contained game; no backend, no telemetry",
+  "content_index": "https://cumulativewebinc.github.io/cwi-cover-pieces/content.json",
+  "try_links": [
+    {
+      "label": "Play Cover Pieces™ free",
+      "url": "https://cumulativewebinc.github.io/cwi-cover-pieces/"
+    },
+    {
+      "label": "Explore the full catalog (listening room)",
+      "url": "https://cumulativewebinc.github.io/cwi-listening-room/"
+    }
+  ],
+  "theme_tracks": [
+    "Zooted Zone",
+    "Doves & Diamonds"
+  ],
+  "license": "Proprietary — © 2026 Cumulative Web Inc, all rights reserved. Contact hp@cumulativeweb.com for licensing."
+}
