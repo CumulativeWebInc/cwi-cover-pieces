@@ -14,7 +14,7 @@
 <title>Cover Pieces&trade; — CWI Jigsaw</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ============ SECTION 1 — CONFIG-driven brand (see JS const BRAND) ============ */
 :root{
@@ -29,6 +29,7 @@
   --danger:#ff4d6d;
   --radius:14px;
   --font:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-display:'Sora','Space Grotesk',system-ui,sans-serif;
   --shadow:0 10px 30px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -185,6 +186,61 @@ footer{padding:8px 16px;font-size:11px;color:var(--muted);display:flex;justify-c
   border-top:1px solid rgba(255,255,255,.06);background:rgba(8,10,15,.8);z-index:40;flex-wrap:wrap}
 footer a{color:var(--accent);text-decoration:none;font-weight:600}
 
+/* ============ ELEVATION — premium interface layer (2026-09-23 rework) ============ */
+header{padding:8px 18px}
+.brand h1{font-family:var(--font-display);font-weight:800;letter-spacing:.5px}
+.brand img{box-shadow:0 0 0 2px var(--cwi-gold),0 0 18px rgba(232,179,26,.35)}
+.hud-chip{font-variant-numeric:tabular-nums}
+.hbtn{transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+.hbtn:active{transform:scale(.96)}
+.hbtn.primary{box-shadow:0 6px 18px rgba(232,179,26,.35)}
+#main{background:radial-gradient(1000px 700px at 50% 30%,rgba(232,179,26,.045),transparent 70%)}
+/* magnetic snap preview: cyan halo + gentle pull */
+.piece{transition:filter .18s ease}
+.piece.magnet{filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.piece.magnet .glow{opacity:1;box-shadow:0 0 26px 8px rgba(53,224,255,.85);animation:magpulse .5s ease-in-out infinite alternate}
+@keyframes magpulse{from{transform:scale(1)}to{transform:scale(1.03)}}
+/* link celebration: gold pulse ripples through the new group */
+.piece.linked{animation:linkp .5s ease-out}
+@keyframes linkp{0%{transform:scale(1.14)}55%{transform:scale(.97)}100%{transform:scale(1)}}
+.piece.linked .glow{animation:glowf .7s ease-out}
+/* tray: glassy drawer, card thumbs */
+#tray{background:rgba(13,16,25,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#trayHead{font-family:var(--font-display);font-weight:700}
+#trayCount{background:rgba(232,179,26,.16);border:1px solid rgba(232,179,26,.4);color:var(--cwi-gold-soft);
+  border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.5px}
+.thumb{border-radius:12px;border:1px solid rgba(255,255,255,.14);box-shadow:0 4px 10px rgba(0,0,0,.4);
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.thumb:hover{transform:translateY(-2px);border-color:var(--cwi-gold);box-shadow:0 8px 16px rgba(0,0,0,.5)}
+.thumb canvas{border-radius:12px}
+/* ghost: brighter guide */
+#ghost{box-shadow:0 0 24px rgba(232,179,26,.18),inset 0 0 24px rgba(232,179,26,.06)}
+/* progress rail: gradient + glow */
+#progressFill{background:linear-gradient(to top,#b57e0e,var(--cwi-gold),var(--cwi-gold-soft));
+  box-shadow:0 0 10px rgba(232,179,26,.7)}
+#progressLbl{font-family:var(--font-display);font-weight:700;color:var(--cwi-gold-soft)}
+#zoomRail{background:rgba(10,13,20,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(232,179,26,.28);box-shadow:0 8px 22px rgba(0,0,0,.45)}
+.rail-btn{color:var(--cwi-gold-soft);font-weight:700}
+/* dialogs: display type, stat cards */
+.dialog h3{font-family:var(--font-display);font-weight:800;letter-spacing:.3px}
+.stat b{font-family:var(--font-display);font-weight:800;font-size:24px}
+.stars{color:var(--cwi-gold);text-shadow:0 0 18px rgba(232,179,26,.6)}
+.stream-btn{transition:border-color .15s ease,transform .15s ease}
+.stream-btn:hover{transform:translateY(-1px)}
+/* intro: display title + tagline */
+#introTitle{font-family:var(--font-display);font-weight:800;letter-spacing:2px}
+#introTag{position:absolute;left:0;right:0;bottom:-116px;text-align:center;color:var(--muted);
+  font-size:14px;letter-spacing:3px;text-transform:uppercase;opacity:0;transition:opacity .8s}
+/* toast: floating pill */
+#toast{border-radius:999px;background:rgba(20,26,40,.92);backdrop-filter:blur(8px);
+  border:1px solid rgba(232,179,26,.55);box-shadow:0 10px 26px rgba(0,0,0,.5)}
+/* rotation hint chip */
+#rotHint{display:none;border-color:rgba(53,224,255,.5);color:var(--accent)}
+#refThumb{transition:transform .2s ease}
+#refThumb:hover{transform:scale(1.04)}
+.menu-card h2{font-family:var(--font-display);font-weight:800}
+.try-link{display:inline-block;margin-top:14px;color:var(--accent);font-weight:600}
 /* portrait phones: tray becomes bottom drawer */
 @media (max-width:720px),(orientation:portrait) and (max-width:900px){
   #gameScreen{flex-direction:column}
@@ -215,6 +271,7 @@ footer a{color:var(--accent);text-decoration:none;font-weight:600}
       <span class="hud-chip">&#9201; <b id="hudTime">0:00</b></span>
       <span class="hud-chip">&#129518; <b id="hudLeft">0</b> left</span>
       <span class="hud-chip">&#11088; <b id="hudScore">0</b></span>
+      <span class="hud-chip" id="rotHint" title="Double-tap a piece to rotate it">&#10227; double-tap = rotate</span>
       <button class="hbtn" id="hintBtn" title="Show the reference image (&#8722;150 pts)">&#128161; Hint</button>
       <button class="hbtn" id="listenBtn" title="Hear the music behind the art">&#127911;</button>
       <button class="hbtn" id="closeBtn" title="Close game">&#10005;</button>
@@ -270,7 +327,7 @@ footer a{color:var(--accent);text-decoration:none;font-weight:600}
     </div>
 
     <!-- overlays -->
-    <div id="introOverlay"><div id="introStage"><div id="introTitle">Cover Pieces<span class="tm">&trade;</span></div></div></div>
+    <div id="introOverlay"><div id="introStage"><div id="introTitle">Cover Pieces<span class="tm">&trade;</span></div><div id="introTag">Rebuild the art &middot; piece by piece</div></div></div>
     <div class="modal" id="listenModal">
       <div class="dialog">
         <h3>&#127911; Like what you see?</h3>
@@ -544,6 +601,7 @@ async function buildPuzzle(imageKey, src, targetCount, opts){
   S.playing = true;
   S.startEpoch = Date.now();
   startTimer();
+  const rh=document.getElementById("rotHint"); if(rh) rh.style.display=S.rotation?"":"none";
   updateHUD();
   // restore saved piece states if provided
   if(opts.savedPieces){
@@ -638,12 +696,17 @@ function bindBoard(){
   w.addEventListener("dblclick", e=>{ if(!e.target.closest(".piece")) resetCamera(); });
   w.addEventListener("contextmenu", e=>e.preventDefault());
 }
+/* UI controls that live inside #boardWrap but must never start a pan/pinch gesture. */
+function boardControlTarget(t){
+  return t && t.closest && t.closest("#zoomRail,#refThumb,#refOverlay,button");
+}
 function onBoardDown(e){
   if(!S.playing) return;
+  if(boardControlTarget(e.target)) return; // zoom slider, ref thumb: not board gestures
   boardWrap().setPointerCapture && e.target===boardWrap() && boardWrap().setPointerCapture(e.pointerId);
   S.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(S.pointers.size===2){ // switch to pinch: cancel any piece drag
-    cancelDrag(false);
+  if(S.pointers.size===2){ // switch to pinch: drop any piece drag first (with snap), then pinch
+    if(S.drag) finishDrag();
     const pts=[...S.pointers.values()];
     S.pinch={d:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y), mx:(pts[0].x+pts[1].x)/2, my:(pts[0].y+pts[1].y)/2, zoom:S.camera.zoom, panX:S.camera.panX, panY:S.camera.panY};
     S.drag=null;
@@ -672,6 +735,7 @@ function onBoardMove(e){
     const dx=(e.clientX-prev.x)/z, dy=(e.clientY-prev.y)/z;
     S.drag.moved=true;
     S.drag.set.forEach(p=>{ p.x+=dx; p.y+=dy; positionEl(p); });
+    updateMagnet();
     return;
   }
   if(S.panStart && S.pointers.size===1){
@@ -690,12 +754,25 @@ function onBoardUp(e){
 }
 function onPieceDown(e){
   if(!S.playing) return;
-  e.stopPropagation(); e.preventDefault();
   const el=e.target.closest(".piece");
-  const p=S.pieces.find(q=>q.el===el); if(!p) return;
+  const p=S.pieces.find(q=>q.el===el); if(!p||p.locked) return; // solved pieces stay put
+  if(S.pinch) return; // a pinch owns the gesture; never start a competing drag
+  const now=Date.now();
+  if(S.rotation && now-(p._tapT||0)<350){
+    // double-tap rotates (iOS Safari has no reliable dblclick) — rotate the whole linked set
+    p._tapT=0;
+    const set=p.group?S.pieces.filter(q=>q.group===p.group&&!q.locked):[p];
+    set.forEach(q=>{ q.rot=(q.rot+15)%360; positionEl(q); });
+    S.moves++; sndSnap(); saveGame();
+    return;
+  }
+  p._tapT=now;
+  if(S.drag && S.drag.pid!==e.pointerId) finishDrag(); // one drag at a time: drop the old one first
+  e.stopPropagation(); e.preventDefault();
   try{ el.setPointerCapture(e.pointerId); }catch(_){}
   S.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  const set = p.group ? S.pieces.filter(q=>q.group===p.group) : [p];
+  const set = p.group ? S.pieces.filter(q=>q.group===p.group && !q.locked) : [p];
+  if(S._z>1000000) S._z=0;
   const topZ = 1000 + (S._z=(S._z||0)+1);
   set.forEach(q=>{ q.el.style.zIndex=topZ; q.el.classList.add("drag","lift");
     setTimeout(()=>q.el.classList.remove("lift"),200); });
@@ -704,7 +781,7 @@ function onPieceDown(e){
 }
 function cancelDrag(restore){
   if(!S.drag) return;
-  S.drag.set.forEach(q=>q.el.classList.remove("drag"));
+  S.drag.set.forEach(q=>q.el.classList.remove("drag","magnet"));
   if(restore){/* positions already live; nothing to undo */}
   S.drag=null;
 }
@@ -714,39 +791,98 @@ function rotateDragSet(deg){
   S.drag.set.forEach(p=>{ p.rot=(p.rot+deg)%360; positionEl(p); });
 }
 function tolPx(){ return Math.min(S.cw,S.ch)*0.28; }
+/* Snap engine: pieces link to NEIGHBORS (relative snap), not just to their
+   absolute home. A drop is tested as a rigid body against every grid-neighbor
+   of every dragged piece; the closest candidate within tolerance wins. */
+function rotOkAbs(p){ return !S.rotation || Math.abs(normRot(p.rot))<=12; }
+function rotOkRel(p,n){ return !S.rotation || Math.abs(normRot(p.rot-n.rot))<=12; }
+/* where member p should sit given neighbor n's current position */
+function relTarget(p,n){ return { x:n.x+(p.homeX-n.homeX), y:n.y+(p.homeY-n.homeY) }; }
+function onBoardPiece(n){ return !n.inTray && n.el.style.display!=="none"; }
+
+/* Best rigid snap delta for the dragged set, or null. Tests (a) absolute home
+   and (b) neighbor-relative poses. Coordinate space: board px throughout
+   (drag deltas are already zoom-normalized in onBoardMove). */
+function findSnapForSet(set){
+  const tol=tolPx(), inSet=new Set(set);
+  let best=null;
+  const consider=(dx,dy)=>{ const dist=Math.hypot(dx,dy); if(!best||dist<best.dist) best={dx,dy,dist}; };
+  for(const p of set){
+    if(rotOkAbs(p)){
+      const dx=p.homeX-p.x, dy=p.homeY-p.y;
+      if(Math.abs(dx)<=tol && Math.abs(dy)<=tol) consider(dx,dy);
+    }
+    for(const n of neighborsOf(p)){
+      if(inSet.has(n)||!onBoardPiece(n)||!rotOkRel(p,n)) continue;
+      const t=relTarget(p,n), dx=t.x-p.x, dy=t.y-p.y;
+      if(Math.abs(dx)<=tol && Math.abs(dy)<=tol) consider(dx,dy);
+    }
+  }
+  return best;
+}
+/* Live magnetic preview while dragging: glow when a snap is in range. */
+function updateMagnet(){
+  if(!S.drag) return;
+  const on=!!findSnapForSet(S.drag.set);
+  S.drag.set.forEach(p=>p.el.classList.toggle("magnet",on));
+}
+/* Atomic group union: flood over grid-adjacency + positional-adjacency starting
+   from the dropped set; every touching piece ends in ONE group id. This makes
+   piece->group and group->group merges reliable and half-linked states
+   impossible (the id assignment happens once, after the flood). */
+let groupSeq=1;
+function linkGroups(set){
+  const tol=tolPx();
+  const seen=new Set(set), queue=[...set];
+  while(queue.length){
+    const p=queue.pop();
+    for(const n of neighborsOf(p)){
+      if(seen.has(n)||!onBoardPiece(n)||!rotOkRel(p,n)) continue;
+      const t=relTarget(n,p); // where n should be relative to p
+      if(Math.abs(n.x-t.x)<=tol && Math.abs(n.y-t.y)<=tol){ seen.add(n); queue.push(n); }
+    }
+  }
+  let gid=null;
+  seen.forEach(p=>{ if(p.group) gid=gid||p.group; });
+  if(!gid) gid="g"+(groupSeq++);
+  seen.forEach(p=>{ p.group=gid; });
+  return {gid, size:seen.size};
+}
+function settleZ(set){ set.forEach(p=>{ if(p.home) p.el.style.zIndex=10; }); }
+
 function finishDrag(){
   const d=S.drag; S.drag=null; if(!d) return;
-  d.set.forEach(q=>q.el.classList.remove("drag"));
+  d.set.forEach(q=>q.el.classList.remove("drag","magnet"));
   if(!d.moved) return;
   S.moves++;
-  // already-home group dropped back: re-seat exactly, no penalty
-  if(d.set.every(p=>p.home)){
-    d.set.forEach(p=>{ p.x=p.homeX; p.y=p.homeY; p.rot=0; positionEl(p); });
-    return;
-  }
-  const tol=tolPx(); let snappedAny=null;
-  d.set.forEach(p=>{
-    if(p.home) return;
-    const rotOk = !S.rotation || Math.abs(normRot(p.rot))<=12;
-    if(rotOk && withinSnap(p.x,p.y,p.homeX,p.homeY,tol)){
-      if(!snappedAny) snappedAny=p;
-    }
-  });
-  if(snappedAny){
-    // rigid group: one member in tolerance => whole group snaps by the same delta
-    const dx=snappedAny.homeX-snappedAny.x, dy=snappedAny.homeY-snappedAny.y;
+  const snap=findSnapForSet(d.set);
+  if(snap){
+    const tol=tolPx();
+    const beforeGroups=new Set(d.set.map(p=>p.group).filter(Boolean));
+    d.set.forEach(p=>{ p.x+=snap.dx; p.y+=snap.dy; positionEl(p); });
+    let seated=0;
     d.set.forEach(p=>{
-      p.x+=dx; p.y+=dy; p.rot=0; p.home=true; p.locked=true; positionEl(p);
-      p.el.classList.remove("snapped"); void p.el.offsetWidth; p.el.classList.add("snapped");
+      if(rotOkAbs(p) && withinSnap(p.x,p.y,p.homeX,p.homeY,tol)){
+        p.x=p.homeX; p.y=p.homeY; p.rot=0;
+        if(!p.home){ p.home=true; p.locked=true; seated++; }
+        positionEl(p);
+        p.el.classList.remove("snapped"); void p.el.offsetWidth; p.el.classList.add("snapped");
+      }
     });
+    const link=linkGroups(d.set);
+    if(seated) S.score+=scoreForPiece(S.total)*seated;
+    if(link.size>d.set.length || ![...beforeGroups].every(g=>g===link.gid)){
+      // merged with pieces outside the dropped set: celebrate the link
+      S.pieces.forEach(p=>{ if(p.group===link.gid){ p.el.classList.remove("linked"); void p.el.offsetWidth; p.el.classList.add("linked"); } });
+      sndSnap();
+    }
     sndClick();
-    S.score += scoreForPiece(S.total)*d.set.filter(p=>p.home).length;
-    mergeNeighbors(d.set);
     removeTrayThumbs(d.set);
+    settleZ(d.set);
     saveGame();
   } else {
     S.attempts++; S.score=Math.max(0,S.score-5);
-    d.set.forEach(p=>{ if(!p.home) sndSnap(); });
+    sndSnap();
     saveGame();
   }
   updateHUD();
@@ -759,21 +895,7 @@ function neighborsOf(p){
   if(p.c>0)out.push(at(p.r,p.c-1)); if(p.c<S.cols-1)out.push(at(p.r,p.c+1));
   return out;
 }
-let groupSeq=1;
-function mergeNeighbors(set){
-  set.forEach(p=>{
-    neighborsOf(p).forEach(n=>{
-      if(n.home && n!==p){
-        const ga=p.group, gb=n.group;
-        if(ga&&gb&&ga!==gb){ S.pieces.forEach(q=>{ if(q.group===gb) q.group=ga; }); }
-        else if(gb&&!ga){ p.group=gb; }
-        else if(ga&&!gb){ n.group=ga; }
-        else if(!ga&&!gb){ const g="g"+(groupSeq++); p.group=g; n.group=g; }
-      }
-    });
-    if(!p.group) p.group="g"+(groupSeq++);
-  });
-}
+/* mergeNeighbors retired: linkGroups() above handles atomic union. */
 
 /* ================================================================
    SECTION 7 — TRAY, HUD, SCORING, HINTS, COMPLETION, CONFETTI
@@ -809,6 +931,7 @@ function trayThumbDown(e,p,thumb){
   const mv=ev=>{
     if(!active && Math.hypot(ev.clientX-sx,ev.clientY-sy)>10){
       active=true;
+      if(S.drag) finishDrag(); // one drag at a time
       p.inTray=false; thumb.remove(); updateTrayCount();
       const b=screenToBoard(ev.clientX,ev.clientY);
       p.x=b.x-p.w/2; p.y=b.y-p.h/2;
@@ -910,7 +1033,7 @@ function playIntro(done){
   }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     tiles.forEach(({t,dl})=>{ t.style.transitionDelay=dl+"s"; t.style.opacity=1; t.style.transform="translate(0,0) rotate(0deg)"; });
-    setTimeout(()=>{ title.style.opacity=1; }, reduced?50:900);
+    setTimeout(()=>{ title.style.opacity=1; const tag=document.getElementById("introTag"); if(tag) tag.style.opacity=1; }, reduced?50:900);
   }));
   setTimeout(finish, reduced?300:2600);
 }
@@ -971,7 +1094,8 @@ async function startNewPuzzle(){
   document.getElementById("startScreen").style.display="none";
   document.getElementById("gameScreen").style.display="flex";
   document.getElementById("hud").style.display="flex";
-  try{ await buildPuzzle(key,src,DIFFICULTIES[selDiff].pieces,{rotation:rot,title}); }
+  const targetCount=(S._pieceOverride&&S._pieceOverride>=4&&S._pieceOverride<=400)?S._pieceOverride:DIFFICULTIES[selDiff].pieces;
+  try{ await buildPuzzle(key,src,targetCount,{rotation:rot,title}); }
   catch(e){ toast("Could not load that image. Try another URL or sample."); backToMenu(); }
 }
 async function continueSaved(sv){
@@ -1050,6 +1174,22 @@ function init(){
   let rT; window.addEventListener("resize",()=>{ clearTimeout(rT); rT=setTimeout(()=>{ if(S.playing||S.pieces.length){ fitImage(); resetCamera(); } setTab(); },250); });
   window.addEventListener("beforeunload",saveGame);
   document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveGame(); });
+  applyDeepLink();
+}
+/* Deep-linkable states for easy playtesting / sharing:
+   ?image=zooted|doves|brand &difficulty=0..3 &pieces=N &rotation=1 &autostart=1 */
+function applyDeepLink(){
+  let q; try{ q=new URLSearchParams(window.location.search||""); }catch(e){ return; }
+  const img=(q.get("image")||"").toLowerCase();
+  const ix={zooted:0,doves:1,brand:2}[img];
+  if(ix!==undefined){ selImage=ix; customSrc=null; }
+  const di=parseInt(q.get("difficulty")||"",10);
+  if(di>=0&&di<DIFFICULTIES.length) selDiff=di;
+  const pc=parseInt(q.get("pieces")||"",10);
+  if(pc>=4&&pc<=400) S._pieceOverride=pc;
+  if(q.get("rotation")==="1"){ const rt=document.getElementById("rotToggle"); if(rt) rt.checked=true; }
+  buildMenu();
+  if(q.get("autostart")==="1") startNewPuzzle();
 }
 document.addEventListener("DOMContentLoaded",init);
 </script>
