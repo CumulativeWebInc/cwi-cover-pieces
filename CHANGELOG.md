@@ -1,3 +1,11 @@
+## 2.0.0 — 2026-09-24 — Full rebuild per Black's iPhone defect order ('puzzle does not work at all')
+- Rebuilt from scratch: bulletproof touch drag-and-drop (pointer capture, transform movement, single-pointer invariant, pickup lift) — pieces genuinely drag and place on touch
+- Procedural interlocking jigsaw edges; snap scale-bounce + glow; neighbor relative-snap grouping
+- Tray redesigned as piece-finder drawer (kills tray-scroll-vs-drag conflict); zoom via on-screen buttons (pinch cut for reliability)
+- 2026 design language: aurora/glassmorphism, Unbounded + Space Grotesk, gold progress rail
+- Tests: 172/172 PASS (node); node --check clean
+- Kept: CWI logo, Cover Pieces™, 3 real-art puzzles (Zooted Zone / Doves & Diamonds / CWI brand), Listen dialog, CTA + listening-room try-link, © 2026, localStorage saves, deep links
+
 # Cover Pieces™ — changelog
 
 ## 1.1.0 — 2026-09-23 — controls + linking rework
