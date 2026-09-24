@@ -77,6 +77,11 @@ h1 .tm{font-size:.55em; vertical-align:super;}
   background:radial-gradient(120% 100% at 50% 0%, rgba(124,92,255,.10), transparent 60%);}
 #boardInner{position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform;}
 #ghost{position:absolute; border:1.5px dashed rgba(245,197,66,.4); border-radius:8px; pointer-events:none;}
+#ghostImg{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:.16;
+  border-radius:8px; pointer-events:none;}
+/* drag layer: lifted piece follows the finger in screen coords while leaving the tray */
+#dragLayer{position:fixed; inset:0; z-index:90; pointer-events:none;}
+#dragLayer .piece{position:absolute; left:0; top:0;}
 .piece{position:absolute; left:0; top:0; touch-action:none; cursor:grab; will-change:transform;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.55));}
 .piece canvas{display:block;}
@@ -87,9 +92,8 @@ h1 .tm{font-size:.55em; vertical-align:super;}
 @keyframes snapglow{0%{filter:drop-shadow(0 0 22px rgba(245,197,66,.95))}100%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.55))}}
 .piece.pulse{animation:piecepulse 1.1s ease 2;}
 @keyframes piecepulse{0%,100%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.55))}50%{filter:drop-shadow(0 0 26px rgba(0,224,198,.95))}}
-/* board controls: zoom buttons (deliberate: no pinch, reliability first) */
-.board-ui{position:absolute; right:12px; bottom:12px; z-index:60; display:flex; flex-direction:column; gap:8px;}
-.board-ui .iconbtn{background:rgba(16,16,32,.85);}
+/* board controls removed in v3: the board always fits the screen, no pan/zoom.
+   One finger = one piece, always. */
 #hintOverlay{position:absolute; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
   background:rgba(5,5,12,.72); backdrop-filter:blur(3px);}
 #hintOverlay.show{display:flex;}
@@ -108,10 +112,13 @@ h1 .tm{font-size:.55em; vertical-align:super;}
 #trayscroll{overflow-x:auto; overflow-y:hidden; touch-action:pan-x; padding:4px 12px 12px; scrollbar-width:thin;}
 #trayrow{display:flex; gap:10px; width:max-content;}
 .thumb{width:64px; height:64px; border-radius:12px; border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.04); padding:4px; cursor:pointer; touch-action:manipulation; flex:0 0 auto;}
-.thumb canvas{width:100%; height:100%; object-fit:contain;}
+  background:rgba(255,255,255,.04); padding:4px; cursor:grab; touch-action:pan-x; flex:0 0 auto;
+  user-select:none; -webkit-user-select:none;}
+.thumb canvas{width:100%; height:100%; object-fit:contain; pointer-events:none;}
 .thumb.done{opacity:.18; filter:grayscale(1);}
-.thumb:active{transform:scale(.94);}
+.thumb.lifted{opacity:.35;}
+.thumb.pulse{animation:thumbpulse .8s ease 2;}
+@keyframes thumbpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,0);}50%{box-shadow:0 0 0 3px rgba(245,197,66,.85);}}
 #trayHint{font-size:11px; color:var(--ink-dim); padding:0 12px 8px;}
 /* portrait phone: bottom drawer */
 @media (max-aspect-ratio: 1/1){
@@ -126,6 +133,7 @@ h1 .tm{font-size:.55em; vertical-align:super;}
   #tray.closed{width:44px;}
   #tray.closed #trayscroll, #tray.closed #trayHint, #tray.closed #traybar .t, #tray.closed #traybar .count{display:none;}
   #trayscroll{overflow-x:hidden; overflow-y:auto; touch-action:pan-y; flex:1;}
+  .thumb{touch-action:pan-y;}
   #trayrow{flex-direction:column; width:auto; align-items:center;}
   #traybar .chev{transform:rotate(-90deg);}
   #tray.closed #traybar .chev{transform:rotate(90deg);}
@@ -228,11 +236,6 @@ footer .copy{font-size:11px; color:var(--ink-dim);}
 <div id="stage">
   <div id="boardWrap">
     <div id="boardInner"></div>
-    <div class="board-ui">
-      <button class="iconbtn" id="zoomIn" title="Zoom in">＋</button>
-      <button class="iconbtn" id="zoomOut" title="Zoom out">－</button>
-      <button class="iconbtn" id="zoomReset" title="Fit puzzle">⤢</button>
-    </div>
     <div id="hintOverlay"><img id="hintImg" alt="Puzzle reference image"></div>
   </div>
   <div id="tray">
@@ -242,9 +245,10 @@ footer .copy{font-size:11px; color:var(--ink-dim);}
       <span class="chev">▾</span>
     </div>
     <div id="trayscroll"><div id="trayrow"></div></div>
-    <div id="trayHint">Tap a piece to find it on the board. Drag pieces on the board to place them.</div>
+    <div id="trayHint">Drag pieces from the tray onto the board — drop them inside the frame to rebuild the cover.</div>
   </div>
 </div>
+<div id="dragLayer"></div>
 
 <footer>
   <span class="copy">© 2026 Cumulative Web Inc — Cover Pieces™</span>
@@ -411,9 +415,11 @@ function layoutGame(g, imgW, imgH){
   g.W = imgW; g.H = imgH;
   g.cellW = imgW / g.cols; g.cellH = imgH / g.rows;
   g.pad = Math.min(g.cellW, g.cellH) * TUNE.tabFrac + TUNE.padExtra;
-  /* World: puzzle centered with scatter margin around it. */
-  g.worldW = Math.ceil(g.W * 2.6); g.worldH = Math.ceil(g.H * 2.6);
-  g.puzzleX = (g.worldW - g.W) / 2; g.puzzleY = (g.worldH - g.H) / 2;
+  /* World: puzzle + apron. The board always fits the screen — no pan, no zoom.
+     Pieces live in the tray until dragged onto the board. */
+  const apron = Math.ceil(Math.min(g.cellW, g.cellH) * 1.2);
+  g.worldW = Math.ceil(g.W + apron*2); g.worldH = Math.ceil(g.H + apron*2);
+  g.puzzleX = apron; g.puzzleY = apron;
   const rng = mulberry32(g.seed);
   const edges = genEdges(g.rows, g.cols, rng);
   g.pieces = [];
@@ -424,26 +430,19 @@ function layoutGame(g, imgW, imgH){
       edges: edges[r][c],
       homeX: g.puzzleX + c*g.cellW - g.pad,
       homeY: g.puzzleY + r*g.cellH - g.pad,
-      x:0, y:0, rot:0, locked:false, gid:0,
+      x:0, y:0, rot:0, locked:false, gid:0, inTray:true,
       el:null, thumb:null
     });
   }
   return g;
 }
+/* v3: no scatter pile — every piece starts in the tray. Kept under the historic
+   name because the test harness calls it; it now "deals" pieces into the tray. */
 function scatterPieces(g, rng){
-  const margin = Math.min(g.cellW, g.cellH);
   for(const p of g.pieces){
     if(p.locked) continue;
-    /* random world pos, kept clear of the puzzle rect */
-    for(let tries=0; tries<40; tries++){
-      const x = margin + rng() * (g.worldW - 2*margin - (g.cellW + 2*g.pad));
-      const y = margin + rng() * (g.worldH - 2*margin - (g.cellH + 2*g.pad));
-      const cx = x + g.pad + g.cellW/2, cy = y + g.pad + g.cellH/2;
-      const inPuzzle = cx > g.puzzleX - margin && cx < g.puzzleX + g.W + margin &&
-                       cy > g.puzzleY - margin && cy < g.puzzleY + g.H + margin;
-      if(!inPuzzle){ p.x = x; p.y = y; break; }
-      if(tries===39){ p.x = x; p.y = y; }
-    }
+    p.inTray = true;
+    p.x = 0; p.y = 0;
     p.gid = g.nextGid++;
   }
 }
@@ -507,7 +506,7 @@ function serializeGame(g){
     zoom:g.zoom, panX:g.panX, panY:g.panY,
     elapsed:g.elapsed, moves:g.moves, hints:g.hints,
     pieces: g.pieces.map(p => [p.id, Math.round(p.x*10)/10, Math.round(p.y*10)/10,
-                               Math.round(p.rot*10)/10, p.locked?1:0, p.gid])
+                               Math.round(p.rot*10)/10, p.locked?1:0, p.gid, p.inTray?1:0])
   });
 }
 function deserializeGame(json){
@@ -516,10 +515,13 @@ function deserializeGame(json){
   const g = createGame(d.imageId, d.pieceCount, d.rotationMode, d.seed);
   layoutGame(g, d.W, d.H);
   if(g.rows !== d.rows || g.cols !== d.cols) throw new Error('grid mismatch');
-  for(const [id,x,y,rot,locked,gid] of d.pieces){
+  for(const [id,x,y,rot,locked,gid,inTray] of d.pieces){
     const p = g.pieces[id];
     if(!p) throw new Error('piece id out of range');
     p.x=x; p.y=y; p.rot=rot; p.locked=!!locked; p.gid=gid;
+    /* v0 saves predate the tray: default to on-board (false) so old
+       scattered games restore exactly where they were */
+    p.inTray = inTray === undefined ? false : !!inTray;
   }
   g.nextGid = Math.max(...g.pieces.map(p=>p.gid), 0) + 1;
   g.zoom=d.zoom; g.panX=d.panX; g.panY=d.panY;
@@ -680,7 +682,8 @@ function $(id){ return document.getElementById(id); }
 
 const App = {
   game:null, img:null, imgSrc:'',
-  drag:null, pan:null,
+  drag:null,
+  thumbDrag:null, /* active tray→board lift: {pid, pointerId, sx, sy, live, moved} */
   els:{},
   timerId:null, saveTimerId:null,
   lastTap:{ id:-1, t:0 },
@@ -729,13 +732,18 @@ function buildPieceElements(){
   const g = App.game;
   const inner = App.els.boardInner;
   inner.textContent = '';
+  $('dragLayer').textContent = '';
   inner.style.width = g.worldW + 'px';
   inner.style.height = g.worldH + 'px';
-  /* ghost target outline */
+  /* ghost target outline + faint goal image: "rebuild THIS here" */
   const ghost = document.createElement('div');
   ghost.id = 'ghost';
   ghost.style.left = g.puzzleX + 'px'; ghost.style.top = g.puzzleY + 'px';
   ghost.style.width = g.W + 'px'; ghost.style.height = g.H + 'px';
+  const gi = document.createElement('img');
+  gi.id = 'ghostImg'; gi.alt = ''; gi.draggable = false;
+  gi.src = App.imgSrc;
+  ghost.appendChild(gi);
   inner.appendChild(ghost);
   const dpr = Math.min(window.devicePixelRatio || 1, TUNE.dprCap);
   for(const p of g.pieces){
@@ -747,6 +755,7 @@ function buildPieceElements(){
     el.addEventListener('pointermove', onPieceMove);
     el.addEventListener('pointerup', onPieceUp);
     el.addEventListener('pointercancel', onPieceCancel);
+    el.hidden = !!p.inTray; /* tray pieces have no board element until dragged out */
     inner.appendChild(el);
     p.el = el;
     placePieceEl(p);
@@ -772,7 +781,10 @@ function buildTray(){
     const dw = src.width * s, dh = src.height * s;
     sctx.drawImage(src, (96-dw)/2, (96-dh)/2, dw, dh);
     d.appendChild(cv);
-    d.addEventListener('click', () => findPiece(p.id));
+    d.addEventListener('pointerdown', onThumbDown);
+    d.addEventListener('pointermove', onThumbMove);
+    d.addEventListener('pointerup', onThumbUp);
+    d.addEventListener('pointercancel', onThumbCancel);
     row.appendChild(d);
     p.thumb = d;
   }
@@ -784,23 +796,109 @@ function updateTray(){
   $('trayCount').textContent = left + ' LEFT';
   $('hudLeft').textContent = left;
   for(const p of g.pieces){
-    if(p.thumb) p.thumb.classList.toggle('done', p.locked);
+    if(p.thumb){
+      p.thumb.classList.toggle('done', p.locked);
+      /* the tray shows only pieces still waiting in it — placed pieces
+         live on the board, locked pieces in the frame */
+      p.thumb.style.display = (p.inTray && !p.locked) ? '' : 'none';
+    }
   }
   const done = g.pieces.length - left;
   $('railfill').style.width = (g.pieces.length ? (100*done/g.pieces.length) : 0) + '%';
 }
 /* tap a tray thumb -> pan board to the piece + pulse it */
-function findPiece(pid){
-  const g = App.game, p = g.pieces[pid];
-  if(!p || p.locked) return;
-  const wrap = App.els.boardWrap;
-  const cx = wrap.clientWidth/2, cy = wrap.clientHeight/2;
-  g.panX = cx - (p.x + g.pad + g.cellW/2) * g.zoom;
-  g.panY = cy - (p.y + g.pad + g.cellH/2) * g.zoom;
-  applyBoardTransform();
-  if(p.el && !App.reducedMotion){
-    p.el.classList.remove('pulse'); void p.el.offsetWidth; p.el.classList.add('pulse');
+/* v3: the tray is the piece SOURCE — tap a thumb to pulse it, drag a thumb to
+   lift the piece onto the board. The old "tap to find" board-pan is gone. */
+function pulseThumb(p){
+  if(p.thumb && !App.reducedMotion){
+    p.thumb.classList.remove('pulse'); void p.thumb.offsetWidth; p.thumb.classList.add('pulse');
   }
+}
+function thumbPiece(e){
+  const el = e.currentTarget;
+  return App.game ? App.game.pieces[Number(el.dataset.pid)] : null;
+}
+function onThumbDown(e){
+  e.preventDefault();
+  const p = thumbPiece(e);
+  if(!p || p.locked || !p.inTray || App.thumbDrag) return; /* one lift at a time */
+  App.thumbDrag = { pid:p.id, pointerId:e.pointerId, sx:e.clientX, sy:e.clientY, live:false, moved:false };
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
+}
+function thumbScreenSize(){
+  const g = App.game;
+  return { w:(g.cellW + 2*g.pad) * g.zoom, h:(g.cellH + 2*g.pad) * g.zoom };
+}
+/* visual: piece follows the finger in screen coords while it travels tray->board */
+function positionDragEl(p, cx, cy){
+  const s = thumbScreenSize(), g = App.game;
+  p.el.style.transformOrigin = '0 0';
+  p.el.style.transform = 'translate(' + (cx - s.w/2) + 'px,' + (cy - s.h/2) + 'px)' +
+    ' scale(' + g.zoom + ') rotate(' + p.rot + 'deg)';
+}
+function onThumbMove(e){
+  const t = App.thumbDrag;
+  if(!t || e.pointerId !== t.pointerId || !App.game) return;
+  const g = App.game, p = g.pieces[t.pid];
+  if(!t.live){
+    /* wait for a deliberate drag; tray scroll (native, per touch-action) cancels us */
+    if(Math.hypot(e.clientX - t.sx, e.clientY - t.sy) < 14) return;
+    t.live = true;
+    p.inTray = false;
+    $('dragLayer').appendChild(p.el);
+    p.el.hidden = false;
+    p.el.classList.add('dragging');
+    if(p.thumb) p.thumb.classList.add('lifted');
+    updateTray();
+  }
+  if(Math.hypot(e.clientX - t.sx, e.clientY - t.sy) > 3) t.moved = true;
+  positionDragEl(p, e.clientX, e.clientY);
+  /* keep world pos current so the drop lands exactly under the finger */
+  const w = toWorld(e.clientX, e.clientY);
+  p.x = w.x - (g.cellW + 2*g.pad)/2; p.y = w.y - (g.cellH + 2*g.pad)/2;
+}
+function boardHit(cx, cy){
+  const br = App.els.boardWrap.getBoundingClientRect();
+  return cx >= br.left && cx <= br.right && cy >= br.top && cy <= br.bottom;
+}
+function settleThumbDrag(p){
+  /* piece el back into the board; transform origin restored for board-space use */
+  App.els.boardInner.appendChild(p.el);
+  p.el.style.transformOrigin = '';
+  p.el.classList.remove('dragging');
+  if(p.thumb) p.thumb.classList.remove('lifted');
+}
+function onThumbUp(e){
+  const t = App.thumbDrag;
+  if(!t || e.pointerId !== t.pointerId) return;
+  App.thumbDrag = null;
+  const g = App.game; if(!g) return;
+  const p = g.pieces[t.pid];
+  if(!t.live){ pulseThumb(p); return; } /* plain tap: acknowledge, nothing moves */
+  settleThumbDrag(p);
+  if(boardHit(e.clientX, e.clientY) && t.moved){
+    /* dropped on the board: clamp into the world, place, resolve like a board drop */
+    const pw = g.cellW + 2*g.pad, ph = g.cellH + 2*g.pad;
+    const w = toWorld(e.clientX, e.clientY);
+    p.x = Math.max(-g.pad, Math.min(g.worldW - pw + g.pad, w.x - pw/2));
+    p.y = Math.max(-g.pad, Math.min(g.worldH - ph + g.pad, w.y - ph/2));
+    placePieceEl(p);
+    resolveBoardDrop([p.id], true);
+  }else{
+    /* released over the tray (or without moving): back where it came from */
+    p.inTray = true; p.el.hidden = true;
+    updateTray(); saveSoon();
+  }
+}
+function onThumbCancel(e){
+  const t = App.thumbDrag;
+  if(!t || e.pointerId !== t.pointerId) return;
+  App.thumbDrag = null;
+  const g = App.game; if(!g) return;
+  const p = g.pieces[t.pid];
+  settleThumbDrag(p);
+  p.inTray = true; p.el.hidden = true;
+  updateTray();
 }
 
 /* ---- piece pointer handlers (the bulletproof path) ---- */
@@ -853,8 +951,9 @@ function makeDragApi(){
     getPos(id){ const p = App.game.pieces[id]; return { x:p.x, y:p.y }; },
     isLocked(id){ return App.game.pieces[id].locked; },
     unitIds(id){
-      const g = App.game, gid = g.pieces[id].gid;
-      return g.pieces.filter(p => p.gid === gid && !p.locked).map(p => p.id);
+      /* v3: one finger = ONE piece, always. Group dragging was removed —
+         it moved pieces the player never grabbed and confused the concept. */
+      return [id];
     },
     lift(ids, on){
       for(const id of ids){
@@ -875,43 +974,6 @@ function makeDragApi(){
   };
 }
 
-/* ---- board pan + zoom (empty-area only; controls excluded) ---- */
-function onBoardDown(e){
-  if(!App.pan || !App.game) return;
-  if(e.target.closest('.piece') || e.target.closest('.board-ui') || e.target.closest('#hintOverlay')) return;
-  if(!App.pan.begin(e.pointerId, e.clientX, e.clientY)) return; /* second finger ignored */
-  try{ App.els.boardWrap.setPointerCapture(e.pointerId); }catch(err){}
-}
-function onBoardMove(e){
-  App.pan.move(e.pointerId, e.clientX, e.clientY);
-}
-function onBoardUp(e){
-  App.pan.end(e.pointerId);
-}
-function onBoardCancel(e){
-  App.pan.cancel(e.pointerId);
-}
-function makePanApi(){
-  return {
-    panBy(dx, dy){
-      const g = App.game; if(!g) return;
-      g.panX += dx; g.panY += dy;
-      applyBoardTransform();
-    }
-  };
-}
-function setZoom(z, cx, cy){
-  const g = App.game; if(!g) return;
-  z = Math.max(TUNE.zoomMin, Math.min(TUNE.zoomMax, z));
-  const wrap = App.els.boardWrap;
-  cx = (cx === undefined) ? wrap.clientWidth/2 : cx;
-  cy = (cy === undefined) ? wrap.clientHeight/2 : cy;
-  const k = z / g.zoom;
-  g.panX = cx - (cx - g.panX) * k;
-  g.panY = cy - (cy - g.panY) * k;
-  g.zoom = z;
-  applyBoardTransform();
-}
 function fitPuzzle(){
   const g = App.game; if(!g) return;
   const wrap = App.els.boardWrap;
@@ -926,15 +988,20 @@ function fitPuzzle(){
    SECTION 6 — GAME LOGIC (drop resolution, scoring, hint, save)
    ================================================================ */
 function afterDrop(res, e){
-  const g = App.game;
   if(res.moved){
-    g.moves++;
-    const p = g.pieces[res.ids[0]];
+    const p = App.game.pieces[res.ids[0]];
     handleTap(p, e);
   }
+  resolveBoardDrop(res.ids, res.moved);
+}
+/* Shared drop resolution for board drags and tray lifts.
+   Snap-to-home + lock only. No group merging: a grabbed piece never
+   drags pieces the player didn't touch. */
+function resolveBoardDrop(ids, moved){
+  const g = App.game;
+  if(moved) g.moves++;
   let snappedAny = false;
-  /* 1) snap-to-home for each member */
-  for(const id of res.ids){
+  for(const id of ids){
     const p = g.pieces[id];
     const t = snapTarget(g, p);
     if(t){
@@ -948,15 +1015,6 @@ function afterDrop(res, e){
           p.el.classList.remove('snapped'); void p.el.offsetWidth; p.el.classList.add('snapped');
         }
       }
-    }
-  }
-  /* 2) near-neighbor relative snap -> merge into draggable groups */
-  const unlocked = res.ids.filter(id => !g.pieces[id].locked);
-  if(unlocked.length){
-    const pairs = mergePairs(g, unlocked);
-    if(pairs.length){
-      mergeGroups(g, pairs);
-      blip(520);
     }
   }
   if(snappedAny){
@@ -1040,7 +1098,7 @@ function confetti(){
     for(const p of ps){
       p.x+=p.vx; p.y+=p.vy; p.r+=p.vr;
       ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
-      ctx.fillStyle = p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s*0.6);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.s/2, -p.s/2, p.s, p.s*0.6);
       ctx.restore();
     }
     if(++frames < 220) requestAnimationFrame(anim);
@@ -1170,7 +1228,7 @@ function beginPlay(imageId, label, src, img, restored){
   }
   App.game = g;
   App.drag = createDragController(makeDragApi());
-  App.pan = createPanController(makePanApi());
+  App.thumbDrag = null;
   g.started = true;
   $('puzzleLabel').textContent = label + ' · ' + diff.label;
   $('menuOverlay').hidden = true;
@@ -1181,7 +1239,8 @@ function beginPlay(imageId, label, src, img, restored){
   App.timerId = setInterval(tick, 1000);
   clearInterval(App.saveTimerId);
   App.saveTimerId = setInterval(saveNow, TUNE.saveEveryMs);
-  if(!restored) playIntro();
+  /* v3: no fly-in intro — pieces wait in the tray, the goal is visible
+     in the frame. The tray hint explains the one mechanic. */
   saveNow();
 }
 function startFromSave(g){
@@ -1195,46 +1254,6 @@ function startFromSave(g){
   App.selDiff = Math.max(0, DIFFICULTIES.findIndex(d => d.pieces === g.pieceCount));
   loadImage(src).then(img => beginPlay(g.imageId, label, src, img, g))
     .catch(() => toast('Could not reload the saved image.'));
-}
-/* intro: pieces fly in from edges to scatter positions, skippable */
-function playIntro(){
-  if(App.reducedMotion){ return; }
-  $('introOverlay').hidden = false;
-  const g = App.game;
-  const spots = [];
-  for(const p of g.pieces){
-    spots.push({ p, x:p.x, y:p.y });
-    const side = p.id % 4;
-    if(side===0){ p.x = -g.cellW*3; p.y = Math.random()*g.worldH; }
-    else if(side===1){ p.x = g.worldW + g.cellW*2; p.y = Math.random()*g.worldH; }
-    else if(side===2){ p.y = -g.cellH*3; p.x = Math.random()*g.worldW; }
-    else { p.y = g.worldH + g.cellH*2; p.x = Math.random()*g.worldW; }
-    placePieceEl(p);
-    if(p.el) p.el.style.transition = 'none';
-  }
-  let done = false;
-  const finish = () => {
-    if(done) return; done = true;
-    for(const s of spots){
-      s.p.x = s.x; s.p.y = s.y;
-      placePieceEl(s.p);
-      if(s.p.el) s.p.el.style.transition = '';
-    }
-    $('introOverlay').hidden = true;
-    saveNow();
-  };
-  $('btnSkipIntro').onclick = finish;
-  $('introOverlay').onclick = (e) => { if(e.target.id !== 'btnSkipIntro') finish(); };
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if(done) return;
-    for(const s of spots){
-      if(s.p.el) s.p.el.style.transition = 'transform 1.4s cubic-bezier(.2,.8,.25,1)';
-      s.p.x = s.x; s.p.y = s.y;
-      placePieceEl(s.p);
-    }
-    setTimeout(finish, 1700);
-  }));
-  setTimeout(finish, 4000); /* hard cap */
 }
 /* outro: pieces fly off, back to menu */
 function playOutro(){
@@ -1257,31 +1276,14 @@ function playOutro(){
 function showMenu(){
   clearInterval(App.timerId); clearInterval(App.saveTimerId);
   App.game = null;
+  App.thumbDrag = null;
   buildMenu();
   $('menuOverlay').hidden = false;
 }
 function wireUi(){
   App.els = { boardInner: $('boardInner'), boardWrap: $('boardWrap') };
-  /* board pan (empty area only) */
-  const wrap = App.els.boardWrap;
-  wrap.addEventListener('pointerdown', onBoardDown);
-  wrap.addEventListener('pointermove', onBoardMove);
-  wrap.addEventListener('pointerup', onBoardUp);
-  wrap.addEventListener('pointercancel', onBoardCancel);
-  /* zoom buttons: stopPropagation so pan never sees them (control-target exclusion) */
-  const noPan = (el, fn) => {
-    el.addEventListener('pointerdown', e => e.stopPropagation());
-    el.addEventListener('click', fn);
-  };
-  noPan($('zoomIn'), () => { if(App.game) setZoom(App.game.zoom * 1.25); });
-  noPan($('zoomOut'), () => { if(App.game) setZoom(App.game.zoom / 1.25); });
-  noPan($('zoomReset'), () => fitPuzzle());
-  wrap.addEventListener('wheel', (e) => {
-    if(!App.game) return;
-    e.preventDefault();
-    const r = wrap.getBoundingClientRect();
-    setZoom(App.game.zoom * Math.exp(-e.deltaY * 0.0012), e.clientX - r.left, e.clientY - r.top);
-  }, { passive:false });
+  /* v3: no board pan, no zoom — the board always fits the screen.
+     Touching empty board area does nothing; pieces are dragged from the tray. */
   $('btnHint').addEventListener('click', useHint);
   $('hintOverlay').addEventListener('click', () => $('hintOverlay').classList.remove('show'));
   $('btnListen').addEventListener('click', () => {
