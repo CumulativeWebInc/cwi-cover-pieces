@@ -79,6 +79,15 @@ h1 .tm{font-size:.55em; vertical-align:super;}
 #ghost{position:absolute; border:1.5px dashed rgba(245,197,66,.4); border-radius:8px; pointer-events:none;}
 #ghostImg{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:.16;
   border-radius:8px; pointer-events:none;}
+/* slot hint: while a piece is lifted, its empty home slot pulses gold so the
+   player can see exactly where the selected piece belongs. When the piece is
+   within snap range the slot goes "hot" — solid bright glow, drop it there. */
+#slotHint{position:absolute; border:2px dashed rgba(245,197,66,.85); border-radius:10px;
+  pointer-events:none; z-index:5; animation:slothint 1.1s ease-in-out infinite;}
+@keyframes slothint{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,0); opacity:.55;}
+  50%{box-shadow:0 0 18px 2px rgba(245,197,66,.55); opacity:1;}}
+#slotHint.hot{border-style:solid; border-color:#f5c542; animation:none; opacity:1;
+  box-shadow:0 0 26px 4px rgba(245,197,66,.8), inset 0 0 18px rgba(245,197,66,.35);}
 /* drag layer: lifted piece follows the finger in screen coords while leaving the tray */
 #dragLayer{position:fixed; inset:0; z-index:90; pointer-events:none;}
 #dragLayer .piece{position:absolute; left:0; top:0;}
@@ -208,6 +217,7 @@ footer .copy{font-size:11px; color:var(--ink-dim);}
 @media (prefers-reduced-motion: reduce){
   .aurora i{animation:none;}
   .piece.snapped{animation:none;}
+  #slotHint{animation:none; opacity:.8;}
   #railfill{transition:none;}
   *{scroll-behavior:auto !important;}
 }
@@ -245,7 +255,7 @@ footer .copy{font-size:11px; color:var(--ink-dim);}
       <span class="chev">▾</span>
     </div>
     <div id="trayscroll"><div id="trayrow"></div></div>
-    <div id="trayHint">Drag pieces from the tray onto the board — drop them inside the frame to rebuild the cover.</div>
+    <div id="trayHint">Drag pieces from the tray onto the board — drop them inside the frame to rebuild the cover. While you hold a piece, its empty slot glows gold; when the slot burns bright, let go and it snaps in.</div>
   </div>
 </div>
 <div id="dragLayer"></div>
@@ -684,6 +694,7 @@ const App = {
   game:null, img:null, imgSrc:'',
   drag:null,
   thumbDrag:null, /* active tray→board lift: {pid, pointerId, sx, sy, live, moved} */
+  slotHintPid:null, /* piece whose home slot is currently glowing (one at a time) */
   els:{},
   timerId:null, saveTimerId:null,
   lastTap:{ id:-1, t:0 },
@@ -849,6 +860,7 @@ function onThumbMove(e){
     p.el.hidden = false;
     p.el.classList.add('dragging');
     if(p.thumb) p.thumb.classList.add('lifted');
+    showSlotHint(p); /* the piece's empty home slot starts glowing */
     updateTray();
   }
   if(Math.hypot(e.clientX - t.sx, e.clientY - t.sy) > 3) t.moved = true;
@@ -856,6 +868,7 @@ function onThumbMove(e){
   /* keep world pos current so the drop lands exactly under the finger */
   const w = toWorld(e.clientX, e.clientY);
   p.x = w.x - (g.cellW + 2*g.pad)/2; p.y = w.y - (g.cellH + 2*g.pad)/2;
+  updateSlotHint(p); /* slot goes "hot" when the piece is in snap range */
 }
 function boardHit(cx, cy){
   const br = App.els.boardWrap.getBoundingClientRect();
@@ -872,6 +885,7 @@ function onThumbUp(e){
   const t = App.thumbDrag;
   if(!t || e.pointerId !== t.pointerId) return;
   App.thumbDrag = null;
+  clearSlotHint();
   const g = App.game; if(!g) return;
   const p = g.pieces[t.pid];
   if(!t.live){ pulseThumb(p); return; } /* plain tap: acknowledge, nothing moves */
@@ -894,11 +908,45 @@ function onThumbCancel(e){
   const t = App.thumbDrag;
   if(!t || e.pointerId !== t.pointerId) return;
   App.thumbDrag = null;
+  clearSlotHint();
   const g = App.game; if(!g) return;
   const p = g.pieces[t.pid];
   settleThumbDrag(p);
   p.inTray = true; p.el.hidden = true;
   updateTray();
+}
+
+/* ---- slot hint: the empty home slot glows while its piece is lifted ----
+   Black's direction: "the spaces should give hints when the player selected
+   [a piece] to the blank game board." One finger = one piece, so exactly one
+   slot hints at a time — the home slot of the lifted piece. */
+function slotHintHot(g, p){
+  /* Pure: is the lifted piece close enough to snap? Drives the "hot" glow. */
+  return !!snapTarget(g, p);
+}
+function showSlotHint(p){
+  const g = App.game;
+  if(!g || !p || p.locked) return;
+  clearSlotHint();
+  App.slotHintPid = p.id;
+  const el = document.createElement('div');
+  el.id = 'slotHint';
+  el.style.left = p.homeX + 'px';
+  el.style.top = p.homeY + 'px';
+  el.style.width = (g.cellW + 2*g.pad) + 'px';
+  el.style.height = (g.cellH + 2*g.pad) + 'px';
+  App.els.boardInner.appendChild(el);
+  updateSlotHint(p);
+}
+function updateSlotHint(p){
+  const g = App.game, el = $('slotHint');
+  if(!el || !g || !p) return;
+  el.classList.toggle('hot', slotHintHot(g, p));
+}
+function clearSlotHint(){
+  App.slotHintPid = null;
+  const el = $('slotHint');
+  if(el) el.remove();
 }
 
 /* ---- piece pointer handlers (the bulletproof path) ---- */
@@ -913,21 +961,26 @@ function onPieceDown(e){
   if(!p || p.locked) return;
   const w = toWorld(e.clientX, e.clientY);
   if(!App.drag.begin(p, e.pointerId, w.x, w.y)) return;  /* second finger ignored */
+  showSlotHint(p); /* the piece's empty home slot starts glowing */
   try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
 }
 function onPieceMove(e){
   if(e.pointerId !== App.drag.owner()) return;
   const w = toWorld(e.clientX, e.clientY);
   App.drag.move(e.pointerId, w.x, w.y);
+  const hp = (App.slotHintPid != null && App.game) ? App.game.pieces[App.slotHintPid] : null;
+  if(hp) updateSlotHint(hp); /* slot goes "hot" when the piece is in snap range */
 }
 function onPieceUp(e){
   if(e.pointerId !== App.drag.owner()) return;
   try{ e.currentTarget.releasePointerCapture(e.pointerId); }catch(err){}
   const res = App.drag.end(e.pointerId);
+  clearSlotHint();
   if(res) afterDrop(res, e);
 }
 function onPieceCancel(e){
   App.drag.cancel(e.pointerId);
+  clearSlotHint();
 }
 /* double-tap rotate (iOS-safe: no dblclick reliance) */
 function handleTap(p, e){
@@ -1350,6 +1403,7 @@ function boot(){
     BRAND, IMAGES, DIFFICULTIES, TUNE,
     mulberry32, gridFor, genEdges, normRot,
     createGame, layoutGame, scatterPieces, snapTol, snapTarget, mergePairs,
+    slotHintHot,
     groupMembers, mergeGroups, computeScore, starRating,
     serializeGame, deserializeGame,
     createDragController, createPanController
