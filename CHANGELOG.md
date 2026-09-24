@@ -1,3 +1,12 @@
+## 3.0.0 — 2026-09-24 — Concept redesign per Black's iPhone report ('click one piece and all of the pieces are moving')
+- Tray is now the piece SOURCE, not a finder: drag a thumbnail straight onto the board; the lifted piece follows the finger on a drag layer and drops exactly where released. Tap a thumbnail only pulses it — nothing moves.
+- REMOVED the measured confusion paths: tray tap-to-find board panning is gone; empty-board pan, zoom buttons, and pinch/wheel zoom are gone — the board always fits the screen.
+- One finger = ONE piece, always: drop resolution no longer merges pieces into shared drag groups (group movement moved pieces the player never grabbed).
+- The full cover image is faintly visible inside the target frame as a persistent goal; pieces wait in the tray — no scattered overlapping pile, no fly-in intro, no pieces under fixed UI.
+- FIXED a real crash found by touch verification: confetti fillRect() was called with 3 args on completion.
+- Verified with real CDP touch input (mobile emulation): tap=0 pieces move; tray drag moves exactly 1; board drag moves exactly 1; tray scroll never lifts; snap-to-home locks; scripted full 24/24 completion reaches the done overlay.
+- Tests: 194/194 PASS (node), incl. new test-tray suite + fillRect crash guard; node --check clean.
+
 ## 2.0.0 — 2026-09-24 — Full rebuild per Black's iPhone defect order ('puzzle does not work at all')
 - Rebuilt from scratch: bulletproof touch drag-and-drop (pointer capture, transform movement, single-pointer invariant, pickup lift) — pieces genuinely drag and place on touch
 - Procedural interlocking jigsaw edges; snap scale-bounce + glow; neighbor relative-snap grouping
