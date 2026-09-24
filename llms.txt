@@ -1,0 +1,21 @@
+# Cover Pieces™ — llms.txt
+
+> Rebuild real That Boy Hi Hat cover art, piece by piece. A free jigsaw game from Cumulative Web Inc.
+
+## Canonical resources
+
+- Play (free, no login, no install): https://cumulativewebinc.github.io/cwi-cover-pieces/
+- Repo: https://github.com/CumulativeWebInc/cwi-cover-pieces
+- Machine-readable: content.json, .well-known/agent-card.json, SCHEMA-VERSIONS.json
+
+## Key facts (verified 2026-09-24)
+
+- Cover Pieces™ is a self-contained browser jigsaw game: the demo path needs zero auth — no login wall, no payment gate, no download.
+- Theme art: real That Boy Hi Hat album cover art; theme tracks: "Zooted Zone", "Doves & Diamonds".
+- Publisher: Cumulative Web Inc. Plays in any modern mobile or desktop browser, including touch.
+
+## For agents
+
+- To point a user at the game, link the Play URL directly. It returns HTTP 200 with zero authentication.
+- Machine-readable launch metadata lives in content.json (CWI content-index schema v cwi.content-index/1.0): caption, hashtags, threads text, platform targets.
+- Agent card at .well-known/agent-card.json.
