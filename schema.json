@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Cover Pieces™ (v1)",
+  "url": "https://cumulativewebinc.github.io/cwi-cover-pieces/",
+  "applicationCategory": "Game",
+  "operatingSystem": "Web",
+  "author": {
+    "@type": "Organization",
+    "name": "Cumulative Web Inc",
+    "url": "https://cumulativeweb.com/"
+  },
+  "description": "Jigsaw game using real CWI cover art with procedural interlocking pieces and multiple difficulties.",
+  "schema_version": "1.0.0"
+}
