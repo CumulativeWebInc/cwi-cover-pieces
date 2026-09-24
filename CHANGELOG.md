@@ -1,3 +1,10 @@
+## 3.1.0 — 2026-09-24 — Slot hints per Black's direction ('the spaces should give hints when the piece the player selected to the blank game board')
+- While a piece is lifted (tray drag or board drag), its empty home slot pulses with a gold dashed outline — the player sees exactly where the selected piece belongs.
+- When the lifted piece enters snap range, the slot goes "hot": solid bright glow = drop it there. Cleared on every drop/cancel; exactly one slot hints at a time (one finger = one piece).
+- Hint is pointer-transparent (never blocks touches) and respects prefers-reduced-motion; tray helper text now teaches the glow.
+- Verified with real CDP touch input (iPhone-sized emulation): hint appears at the piece's homeX/homeY mid-drag, hot near home, snap+lock+hint-cleared on release over home.
+- Tests: 220/220 PASS (node), incl. new test-slothint suite (slotHintHot pure logic + both-lift-path wiring guards).
+
 ## 3.0.0 — 2026-09-24 — Concept redesign per Black's iPhone report ('click one piece and all of the pieces are moving')
 - Tray is now the piece SOURCE, not a finder: drag a thumbnail straight onto the board; the lifted piece follows the finger on a drag layer and drops exactly where released. Tap a thumbnail only pulses it — nothing moves.
 - REMOVED the measured confusion paths: tray tap-to-find board panning is gone; empty-board pan, zoom buttons, and pinch/wheel zoom are gone — the board always fits the screen.
